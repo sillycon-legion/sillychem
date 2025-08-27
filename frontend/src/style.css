@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+.group-active {
+  @apply bg-gray-50 dark:bg-white/5 text-indigo-600 dark:text-white;
+}
+
+.group:not(.group-active) {
+  @apply text-gray-700 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5;
+}
+
+.group {
+  @apply flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold;
+}
+
+.recipe {
+  @apply border-t border-gray-700 dark:border-gray-400 py-4;
+}
+
+.recipe-io {
+  @apply pl-4;
+}
+
+.reagent-link {
+  @apply text-blue-500;
+}

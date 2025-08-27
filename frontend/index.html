@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" class="h-full bg-white dark:bg-gray-900">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Robustly Many Items</title>
+  </head>
+  <body class="h-full">
+    <div class="fixed inset-y-0 z-50 flex w-108 flex-row dark:bg-gray-900">
+      <div
+        class="flex grow max-w-36 flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pt-6 dark:border-white/10 dark:bg-black/10"
+      >
+        <nav class="flex flex-1 flex-col">
+          <ul role="list" id="groups" class="-mx-2 space-y-1"></ul>
+        </nav>
+      </div>
+      <div
+        class="flex grow max-w-72 flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pt-6 dark:border-white/10 dark:bg-black/10"
+      >
+        <nav class="flex flex-1 flex-col">
+          <ul role="list" id="chemicals" class="-mx-2 space-y-1"></ul>
+        </nav>
+      </div>
+    </div>
+    <main class="pl-108 w-full h-full">
+      <div
+        id="placeholder"
+        class="p-8 dark:text-white w-full h-full flex items-center justify-center"
+      >
+        <h1 class="text-4xl font-semibold text-gray-600 dark:text-gray-500">
+          Select a chemical
+        </h1>
+      </div>
+      <div
+        id="chem"
+        class="p-8 pt-4 dark:text-white w-full h-full hidden flex-col gap-2 border-t-16"
+      >
+        <h1 id="chemName" class="text-xl font-semibold">Cryoxadone</h1>
+        <p id="chemDesc">
+          Required for the proper function of cryogenics. Heals all standard
+          types of damage, but only works in temperatures under 213K. It can
+          treat and rejuvenate plants when applied in small doses.
+        </p>
+        <p>Seems to be <span id="chemPhysicalDesc">fizzy</span>.</p>
+        <h2 class="text-xl font-semibold">Recipes</h2>
+        <ul id="recipes">
+          <li class="recipe">
+            Mix for 3u:
+            <ul class="recipe-io">
+              <li>1u <a href="#Dexalin" class="text-blue-500">dexalin</a></li>
+              <li>1u <a href="#Water" class="text-blue-500">water</a></li>
+              <li>1u <a href="#Oxygen" class="text-blue-500">oxygen</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
