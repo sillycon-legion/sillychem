@@ -144,6 +144,15 @@ function updateChemDetails(chemical: {
           inputList.appendChild(createRecipeIoElement(result));
         }
         elem.appendChild(inputList);
+        if (recipe.catalysts != undefined && recipe.catalysts.length != 0) {
+          elem.append("Catalysts:");
+          const catalystList = document.createElement("ul");
+          catalystList.classList.add("recipe-io");
+          for (const result of recipe.catalysts) {
+            catalystList.appendChild(createRecipeIoElement(result));
+          }
+          elem.appendChild(catalystList);
+        }
         const sideProducts = recipe.results.filter(
           (e) => e.reagent_id != chemical.id,
         );

@@ -164,22 +164,30 @@ fn main() -> Result<()> {
                         "Prototype yml {} has a reaction without an id?",
                         entry.display()
                     ))?;
+                    let mut catalysts = vec![];
                     let mut reactants = vec![];
                     let mut products = vec![];
-                    for (reactant, amount) in prototype["reactants"]
+                    for (reactant, reactant_data) in prototype["reactants"]
                         .as_hash()
                         .ok_or(eyre!("Reaction {id} has no reactants?"))?
                     {
                         let reactant = reactant
                             .as_str()
                             .ok_or(eyre!("Reaction {id} has an invalid reactant?"))?;
-                        let amount = amount["amount"]
+                        let amount = reactant_data["amount"]
                             .as_f64_alt()
                             .ok_or(eyre!("Reaction {id} has an invalid reactant?"))?;
-                        reactants.push(ReagentWithAmount {
-                            reagent_id: reactant.to_owned(),
-                            amount,
-                        });
+                        if reactant_data["catalyst"].as_bool() == Some(true) {
+                            catalysts.push(ReagentWithAmount {
+                                reagent_id: reactant.to_owned(),
+                                amount,
+                            });
+                        } else {
+                            reactants.push(ReagentWithAmount {
+                                reagent_id: reactant.to_owned(),
+                                amount,
+                            });
+                        }
                     }
                     let Some(products_yaml) = prototype["products"].as_hash() else {
                         continue;
@@ -208,6 +216,7 @@ fn main() -> Result<()> {
                             max_temp: prototype["maxTemp"].as_f64_alt(),
                             reactants,
                             results: products,
+                            catalysts,
                         });
                     } else {
                         for machine in machines {
@@ -223,6 +232,7 @@ fn main() -> Result<()> {
                                 max_temp: prototype["maxTemp"].as_f64_alt(),
                                 reactants: reactants.clone(),
                                 results: products.clone(),
+                                catalysts: catalysts.clone(),
                             });
                         }
                     }
@@ -331,6 +341,8 @@ enum Recipe {
         max_temp: Option<f64>,
         reactants: Vec<ReagentWithAmount>,
         results: Vec<ReagentWithAmount>,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        catalysts: Vec<ReagentWithAmount>,
     },
 }
 
