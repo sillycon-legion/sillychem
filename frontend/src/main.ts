@@ -1,5 +1,4 @@
 import "./style.css";
-import "@tailwindplus/elements";
 import reagentData from "./data.json";
 
 const groups = [...new Set(reagentData.reagents.map((e) => e.group))].sort();
