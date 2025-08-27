@@ -69,7 +69,13 @@ fn main() -> Result<()> {
                         .unwrap_or_default();
                     for component in components {
                         if component["type"].as_str() == Some("Extractable") {
-                            let reagents = component["juiceSolution"]["reagents"]
+                            let reagents = if let Some(solution) = component["grindableSolutionName"].as_str() {
+                                let solutions = components.iter().find(|&e| e["type"].as_str() == Some("SolutionContainerManager")).unwrap_or(&Yaml::BadValue);
+                                &solutions["solutions"][solution]["reagents"]
+                            } else {
+                                &component["juiceSolution"]["reagents"]
+                            };
+                            let reagents = reagents
                                 .as_vec()
                                 .map(Vec::as_slice)
                                 .unwrap_or_default();

@@ -111,7 +111,7 @@ function updateChemDetails(chemical: {
   document.getElementById("chemPhysicalDesc")!.textContent =
     chemical.physical_desc;
   document.getElementById("recipes")!.replaceChildren();
-  for (const recipe of reagentData.recipes) {
+  for (const recipe of reagentData.recipes.sort((a, b) => a.id.localeCompare(b.id))) {
     if (recipe.results.find((v) => v.reagent_id == chemical.id) == undefined) {
       continue;
     }
