@@ -395,6 +395,7 @@ fn main() -> Result<()> {
                             })
                             .collect(),
                     });
+                    break;
                 }
             }
         }
