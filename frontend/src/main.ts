@@ -199,6 +199,7 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
       entry.append("Modifies health by:");
       const damagelist = document.createElement("ul");
       damagelist.classList.add("damage");
+      const damagetypes = [];
       for (const damagetype in effect.effect.damages) {
         if (
           Object.prototype.hasOwnProperty.call(
@@ -206,21 +207,24 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
             damagetype,
           )
         ) {
-          const damage = document.createElement("li");
-          const amount = effect.effect.damages[damagetype] / 100;
-          const numberelem = document.createElement("span");
-          if (amount > 0) {
-            damage.append("Deals ");
-            numberelem.classList.add("damage-deals");
-          } else {
-            damage.append("Heals ");
-            numberelem.classList.add("damage-heals");
-          }
-          numberelem.innerText = `${Math.abs(amount)}`;
-          damage.appendChild(numberelem);
-          damage.append(` ${damagetype}`);
-          damagelist.appendChild(damage);
+          damagetypes.push(damagetype);
         }
+      }
+      for (const damagetype of damagetypes.sort()) {
+        const damage = document.createElement("li");
+        const amount = effect.effect.damages[damagetype] / 100;
+        const numberelem = document.createElement("span");
+        if (amount > 0) {
+          damage.append("Deals ");
+          numberelem.classList.add("damage-deals");
+        } else {
+          damage.append("Heals ");
+          numberelem.classList.add("damage-heals");
+        }
+        numberelem.innerText = `${Math.abs(amount)}`;
+        damage.appendChild(numberelem);
+        damage.append(` ${damagetype}`);
+        damagelist.appendChild(damage);
       }
       entry.appendChild(damagelist);
       break;
@@ -228,6 +232,7 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
       entry.append("Modifies health evenly by:");
       const damagegrouplist = document.createElement("ul");
       damagegrouplist.classList.add("damage");
+      const damagegroups = [];
       for (const damagetype in effect.effect.damages) {
         if (
           Object.prototype.hasOwnProperty.call(
@@ -235,21 +240,24 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
             damagetype,
           )
         ) {
-          const damage = document.createElement("li");
-          const amount = effect.effect.damages[damagetype] / 100;
-          const numberelem = document.createElement("span");
-          if (amount > 0) {
-            damage.append("Deals ");
-            numberelem.classList.add("damage-deals");
-          } else {
-            damage.append("Heals ");
-            numberelem.classList.add("damage-heals");
-          }
-          numberelem.innerText = `${Math.abs(amount)}`;
-          damage.appendChild(numberelem);
-          damage.append(` ${damagetype}`);
-          damagegrouplist.appendChild(damage);
+          damagegroups.push(damagetype);
         }
+      }
+      for (const damagetype of damagegroups.sort()) {
+        const damage = document.createElement("li");
+        const amount = effect.effect.damages[damagetype] / 100;
+        const numberelem = document.createElement("span");
+        if (amount > 0) {
+          damage.append("Deals ");
+          numberelem.classList.add("damage-deals");
+        } else {
+          damage.append("Heals ");
+          numberelem.classList.add("damage-heals");
+        }
+        numberelem.innerText = `${Math.abs(amount)}`;
+        damage.appendChild(numberelem);
+        damage.append(` ${damagetype}`);
+        damagegrouplist.appendChild(damage);
       }
       entry.appendChild(damagegrouplist);
       break;
@@ -466,25 +474,29 @@ function updateChemDetails(chemical: Reagent) {
   if (chemical.metabolisms != undefined) {
     document.getElementById("metabolism-section")?.classList.remove("hidden");
     document.getElementById("metabolism-groups")?.replaceChildren();
+    const groups = [];
     for (const group in chemical.metabolisms) {
       if (Object.prototype.hasOwnProperty.call(chemical.metabolisms, group)) {
-        const effects = chemical.metabolisms[group];
-        const elem = document.createElement("div");
-        const header = document.createElement("h3");
-        header.classList.add("metabolism-group-head");
-        header.textContent = group;
-        elem.appendChild(header);
-        const list = document.createElement("ul");
-        list.classList.add("metabolism-group-list");
-        for (const effect of effects) {
-          const entry = document.createElement("li");
-          entry.classList.add("metabolism");
-          createEffectElement(effect, entry);
-          list.appendChild(entry);
-        }
-        elem.appendChild(list);
-        document.getElementById("metabolism-groups")?.appendChild(elem);
+        groups.push(group);
       }
+    }
+    for (const group of groups.sort()) {
+      const effects = chemical.metabolisms[group];
+      const elem = document.createElement("div");
+      const header = document.createElement("h3");
+      header.classList.add("metabolism-group-head");
+      header.textContent = group;
+      elem.appendChild(header);
+      const list = document.createElement("ul");
+      list.classList.add("metabolism-group-list");
+      for (const effect of effects) {
+        const entry = document.createElement("li");
+        entry.classList.add("metabolism");
+        createEffectElement(effect, entry);
+        list.appendChild(entry);
+      }
+      elem.appendChild(list);
+      document.getElementById("metabolism-groups")?.appendChild(elem);
     }
   } else {
     document.getElementById("metabolism-section")?.classList.add("hidden");
@@ -515,10 +527,11 @@ function updateChemDetails(chemical: Reagent) {
       const elem = createRecipeElement(recipe);
       document.getElementById("recipes")!.appendChild(elem);
     }
-    if (recipe.type == "Reaction"){
+    if (recipe.type == "Reaction") {
       if (
-        [...(recipe.catalysts ?? []), ...recipe.reactants].find((v) => v.reagent_id == chemical.id) !=
-        undefined
+        [...(recipe.catalysts ?? []), ...recipe.reactants].find(
+          (v) => v.reagent_id == chemical.id,
+        ) != undefined
       ) {
         const elem = createRecipeElement(recipe);
         document.getElementById("usages")!.appendChild(elem);
@@ -608,4 +621,3 @@ function createRecipeElement(recipe: Recipe) {
   }
   return elem;
 }
-
