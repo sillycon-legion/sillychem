@@ -5,6 +5,7 @@ import reagentData, {
   type ReagentWithAmount,
   type Recipe,
 } from "./data.ts";
+import Fuse from "fuse.js";
 
 const groups = [...new Set(reagentData.reagents.map((e) => e.group))].sort();
 function makeGroupElement(name: string): HTMLLIElement {
@@ -62,20 +63,18 @@ function updateSelectedGroup() {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(makeChemicalElement),
     );
-    if (selectedChemical != -1) {
-      document
-        .getElementById("chemicals")
-        ?.children[selectedChemical]?.children[0].classList.add("group-active");
-      document
-        .getElementById("placeholder")
-        ?.classList.replace("flex", "hidden");
-      document.getElementById("chem")?.classList.replace("hidden", "flex");
-    } else {
-      document
-        .getElementById("placeholder")
-        ?.classList.replace("hidden", "flex");
-      document.getElementById("chem")?.classList.replace("flex", "hidden");
-    }
+  } else {
+    document.getElementById("chemicals")?.replaceChildren();
+  }
+  if (selectedChemical != -1) {
+    document
+      .getElementById("chemicals")
+      ?.children[selectedChemical]?.children[0].classList.add("group-active");
+    document.getElementById("placeholder")?.classList.replace("flex", "hidden");
+    document.getElementById("chem")?.classList.replace("hidden", "flex");
+  } else {
+    document.getElementById("placeholder")?.classList.replace("hidden", "flex");
+    document.getElementById("chem")?.classList.replace("flex", "hidden");
   }
 }
 
@@ -621,3 +620,43 @@ function createRecipeElement(recipe: Recipe) {
   }
   return elem;
 }
+
+const fuse = new Fuse(reagentData.reagents, {
+  keys: ["name"],
+});
+
+const searchbar = document.getElementById("search") as HTMLInputElement;
+const searchresults = document.getElementById(
+  "search-results",
+) as HTMLUListElement;
+
+function updateSearchResults() {
+  const results = fuse.search(searchbar.value);
+  searchresults.replaceChildren();
+  for (const result of results) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.classList.add("search-result");
+    a.href = `#${result.item.id}`;
+    a.textContent = result.item.name;
+    li.appendChild(a);
+    searchresults.appendChild(li);
+  }
+  if (searchresults.children.length == 0) {
+    const li = document.createElement("li");
+    li.classList.add("search-no-results");
+    li.textContent = "No results";
+    searchresults.appendChild(li);
+  }
+  searchresults.classList.remove("hidden");
+}
+
+searchbar.addEventListener("input", updateSearchResults);
+searchbar.addEventListener("focus", updateSearchResults);
+addEventListener("click", (ev) => {
+  if (ev.target != searchbar) searchresults.classList.add("hidden");
+});
+addEventListener("popstate", () => {
+  searchbar.value = "";
+  searchresults.classList.add("hidden");
+});
