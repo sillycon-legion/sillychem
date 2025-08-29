@@ -445,13 +445,10 @@ fn main() -> Result<()> {
                     let Some(kind) = kind.as_str() else {
                         continue;
                     };
-                    let parsed_effects = match metabolisms.get_mut(kind) {
-                        Some(val) => val,
-                        None => {
-                            metabolisms.insert(kind.to_owned(), Vec::new());
-                            metabolisms.get_mut(kind).unwrap()
-                        }
-                    };
+                    if metabolisms.contains_key(kind) {
+                        continue;
+                    }
+                    let mut parsed_effects = Vec::new();
                     for effect in effects
                         .index("effects")
                         .as_vec()
@@ -472,6 +469,7 @@ fn main() -> Result<()> {
                             parsed_effects.push(parsed);
                         }
                     }
+                    metabolisms.insert(kind.to_string(), parsed_effects);
                 }
             }
             let mut plant_metabolisms = vec![];
