@@ -555,7 +555,7 @@ function createRecipeElement(recipe: Recipe) {
         intro += ` above ${recipe.min_temp}K`;
       }
       if (recipe.max_temp != undefined) {
-        intro += ` below ${recipe.min_temp}K`;
+        intro += ` below ${recipe.max_temp}K`;
       }
       intro += `:`;
       elem.textContent = intro;
