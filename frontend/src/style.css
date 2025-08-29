@@ -23,3 +23,35 @@
 .reagent-link {
   @apply text-blue-500;
 }
+
+.metabolism-group-head {
+  @apply text-lg font-semibold;
+}
+
+.metabolism-group-list {
+  @apply pl-4 list-disc;
+}
+
+.metabolism {
+  /* @apply border-t border-gray-700 dark:border-gray-400 py-4; */
+}
+
+.conditions {
+  @apply pl-4;
+}
+
+.damage {
+  @apply pl-4;
+}
+
+.damage-deals {
+  @apply text-red-500;
+}
+
+.damage-heals {
+  @apply text-green-500;
+}
+
+#plant-metabolism {
+  @apply pl-4 list-disc;
+}

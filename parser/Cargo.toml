@@ -8,7 +8,7 @@ color-eyre = "0.6.5"
 eyre = "0.6.12"
 fluent-bundle = "0.16.0"
 glob = "0.3.3"
+saphyr = "0.0.6"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.143"
 unic-langid = { version = "0.9.6", features = ["macros"] }
-yaml-rust2 = "0.10.3"
