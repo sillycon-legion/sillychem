@@ -342,7 +342,7 @@ interface GrindRecipe {
   results: ReagentWithAmount[];
 }
 
-interface ReactionRecipe {
+export interface ReactionRecipe {
   type: "Reaction";
   id: string;
   machine?: string;

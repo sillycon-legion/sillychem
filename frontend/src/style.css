@@ -67,3 +67,11 @@
 .search-result {
   @apply block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:outline-hidden dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white;
 }
+
+#ingredients {
+  @apply pl-4 list-disc;
+}
+
+#leftovers {
+  @apply pl-4 list-disc;
+}

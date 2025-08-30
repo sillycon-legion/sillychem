@@ -550,7 +550,7 @@ function updateChemDetails(chemical: Reagent) {
 }
 updateSelectedGroup();
 addEventListener("popstate", updateSelectedGroup);
-function createRecipeElement(recipe: Recipe) {
+function createRecipeElement(recipe: Recipe): HTMLLIElement {
   const elem = document.createElement("li");
   elem.classList.add("recipe");
   switch (recipe.type) {
