@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::{BTreeMap, HashMap}};
 
 use eyre::{Context, Result, eyre};
 use fluent_bundle::{FluentArgs, FluentBundle, FluentResource, FluentValue};
@@ -437,7 +437,8 @@ fn main() -> Result<()> {
     for (_, value) in abstract_reagents.iter() {
         if !value.is_abstract {
             let id = &value.id;
-            let mut metabolisms = HashMap::new();
+            let mut metabolisms = BTreeMap::new();
+            let mut tombstones = vec![];
             for metabolism in &value.metabolisms {
                 let Some(metabolism) = metabolism.as_mapping() else {
                     continue;
@@ -470,8 +471,14 @@ fn main() -> Result<()> {
                             parsed_effects.push(parsed);
                         }
                     }
+                    if parsed_effects.is_empty() {
+                        tombstones.push(kind.to_string());
+                    }
                     metabolisms.insert(kind.to_string(), parsed_effects);
                 }
+            }
+            for tombstone in tombstones {
+                metabolisms.remove(&tombstone);
             }
             let mut plant_metabolisms = vec![];
             for effect in &value.plant_metabolisms {
@@ -630,6 +637,12 @@ fn main() -> Result<()> {
         }
     }
     println!("Writing data");
+
+    reagents.sort_unstable_by_key(|a| a.id.clone());
+    recipes.sort_unstable_by_key(|a| match a {
+        Recipe::Grind { id, .. } => format!("{id}Grind"),
+        Recipe::Reaction { id, .. } => format!("{id}Reaction"),
+    }.clone());
     serde_json::to_writer(
         std::fs::File::create("frontend/src/data.json")?,
         &CompleteData { reagents, recipes },
@@ -738,7 +751,7 @@ impl ConditionalEffect {
                         }
                     }
                 }
-                let mut damages = HashMap::new();
+                let mut damages = BTreeMap::new();
                 for (kind, change) in changes {
                     if change == 0 {
                         continue;
@@ -751,7 +764,7 @@ impl ConditionalEffect {
                 Effect::HealthChange { damages }
             }
             "type:EvenHealthChange" => {
-                let mut damages = HashMap::new();
+                let mut damages = BTreeMap::new();
                 if let Some(groups) = effect.index("damage").as_mapping() {
                     for (kind, amount) in groups {
                         let Some(kind) = kind.as_str() else {
@@ -1097,10 +1110,10 @@ enum Effect {
         relative: f64,
     },
     HealthChange {
-        damages: HashMap<String, i64>,
+        damages: BTreeMap<String, i64>,
     },
     EvenHealthChange {
-        damages: HashMap<String, i64>,
+        damages: BTreeMap<String, i64>,
     },
     ChemVomit,
     AdjustReagent {
@@ -1226,8 +1239,8 @@ struct Reagent {
     desc: String,
     physical_desc: String,
     color: String,
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
-    metabolisms: HashMap<String, Vec<ConditionalEffect>>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    metabolisms: BTreeMap<String, Vec<ConditionalEffect>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     plant_metabolisms: Vec<ConditionalEffect>,
 }
