@@ -6,8 +6,13 @@ export interface Reagent {
   desc: string;
   physical_desc: string;
   color: string;
-  metabolisms?: Record<string, ConditionalEffect[]>;
+  metabolisms?: Record<string, Metabolism>;
   plant_metabolisms?: ConditionalEffect[];
+}
+
+interface Metabolism {
+  rate: number;
+  effects: ConditionalEffect[];
 }
 
 type EffectCondition =

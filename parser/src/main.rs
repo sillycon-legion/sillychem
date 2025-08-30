@@ -1,4 +1,7 @@
-use std::{borrow::Cow, collections::{BTreeMap, HashMap}};
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap},
+};
 
 use eyre::{Context, Result, eyre};
 use fluent_bundle::{FluentArgs, FluentBundle, FluentResource, FluentValue};
@@ -474,7 +477,13 @@ fn main() -> Result<()> {
                     if parsed_effects.is_empty() {
                         tombstones.push(kind.to_string());
                     }
-                    metabolisms.insert(kind.to_string(), parsed_effects);
+                    metabolisms.insert(
+                        kind.to_string(),
+                        Metabolism {
+                            rate: effects.index("metabolismRate").as_f64_alt().unwrap_or(0.5),
+                            effects: parsed_effects,
+                        },
+                    );
                 }
             }
             for tombstone in tombstones {
@@ -639,10 +648,13 @@ fn main() -> Result<()> {
     println!("Writing data");
 
     reagents.sort_unstable_by_key(|a| a.id.clone());
-    recipes.sort_unstable_by_key(|a| match a {
-        Recipe::Grind { id, .. } => format!("{id}Grind"),
-        Recipe::Reaction { id, .. } => format!("{id}Reaction"),
-    }.clone());
+    recipes.sort_unstable_by_key(|a| {
+        match a {
+            Recipe::Grind { id, .. } => format!("{id}Grind"),
+            Recipe::Reaction { id, .. } => format!("{id}Reaction"),
+        }
+        .clone()
+    });
     serde_json::to_writer(
         std::fs::File::create("frontend/src/data.json")?,
         &CompleteData { reagents, recipes },
@@ -1240,9 +1252,15 @@ struct Reagent {
     physical_desc: String,
     color: String,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    metabolisms: BTreeMap<String, Vec<ConditionalEffect>>,
+    metabolisms: BTreeMap<String, Metabolism>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     plant_metabolisms: Vec<ConditionalEffect>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Metabolism {
+    rate: f64,
+    effects: Vec<ConditionalEffect>,
 }
 
 #[derive(Debug, Clone)]

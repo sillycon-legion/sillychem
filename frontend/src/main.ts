@@ -484,11 +484,11 @@ function updateChemDetails(chemical: Reagent) {
       const elem = document.createElement("div");
       const header = document.createElement("h3");
       header.classList.add("metabolism-group-head");
-      header.textContent = group;
+      header.textContent = `${group} (${effects.rate} u/s)`;
       elem.appendChild(header);
       const list = document.createElement("ul");
       list.classList.add("metabolism-group-list");
-      for (const effect of effects) {
+      for (const effect of effects.effects) {
         const entry = document.createElement("li");
         entry.classList.add("metabolism");
         createEffectElement(effect, entry);
