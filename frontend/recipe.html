@@ -89,6 +89,7 @@
         class="p-8 pt-4 dark:text-white w-full h-full hidden flex-col gap-2 border-t-16"
       >
         <div
+          id="single-chem-amount"
           class="flex items-center rounded-md bg-white px-3 outline-1 -outline-offset-1 outline-gray-300 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-indigo-600 dark:bg-white/5 dark:outline-white/10 dark:focus-within:outline-indigo-500"
         >
           <div
@@ -110,7 +111,17 @@
           >
             u
           </div>
+          <button
+            id="add-to-list"
+            class="border-l border-gray-300 dark:border-white/10 ml-2 pl-2 shrink-0 text-base text-gray-800 select-none sm:text-sm/6 dark:text-gray-100"
+          >
+            Add to list
+          </button>
         </div>
+        <section id="results-section" class="hidden">
+          <h1 class="text-xl font-semibold my-3">Results</h1>
+          <ul id="results"></ul>
+        </section>
         <h1 class="text-xl font-semibold my-3">Ingredients</h1>
         <ul id="ingredients"></ul>
         <section id="leftovers-section">

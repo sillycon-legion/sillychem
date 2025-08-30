@@ -75,3 +75,7 @@
 #leftovers {
   @apply pl-4 list-disc;
 }
+
+#results {
+  @apply pl-4 list-disc;
+}
