@@ -6,10 +6,15 @@ import reagentData, {
 } from "./data.ts";
 import Fuse from "fuse.js";
 import * as Comlink from "comlink";
-import { synthesisGraphSort, type SynthesisGraphNode } from "./synthesis-helper.ts";
+import {
+  synthesisGraphSort,
+  type SynthesisGraphNode,
+} from "./synthesis-helper.ts";
 import SynthesisWorker from "./synthesis-worker.ts?worker";
 
-const synthesisGraphSortAsync: Comlink.Remote<(nodes: SynthesisGraphNode[]) => ReagentWithAmount[]> = Comlink.wrap(new SynthesisWorker());
+const synthesisGraphSortAsync: Comlink.Remote<
+  (nodes: SynthesisGraphNode[]) => ReagentWithAmount[]
+> = Comlink.wrap(new SynthesisWorker());
 
 const groups = [...new Set(reagentData.reagents.map((e) => e.group))].sort();
 groups.push("Lists");
@@ -354,11 +359,11 @@ function updateListDetails(list: ReagentWithAmount[]) {
   elem.textContent = "Calculating recipe, please wait.";
   document.getElementById("steps")?.replaceChildren(elem);
   const curHash = document.location.hash;
-  synthesisGraphSortAsync(synthesisGraph).then(requiredIntermediates => {
+  synthesisGraphSortAsync(synthesisGraph).then((requiredIntermediates) => {
     if (document.location.hash != curHash) {
       return;
     }
-  document.getElementById("steps")?.replaceChildren();
+    document.getElementById("steps")?.replaceChildren();
     for (const intermediate of requiredIntermediates) {
       const recipe = getCanonicalRecipe(intermediate.reagent_id)!;
       const batchsize = recipe.results![0].amount;

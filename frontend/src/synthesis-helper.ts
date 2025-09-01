@@ -9,7 +9,9 @@ export interface SynthesisGraphNode {
   needs: string[]; // incoming
 }
 
-export function synthesisGraphSort(nodes: SynthesisGraphNode[]): ReagentWithAmount[] {
+export function synthesisGraphSort(
+  nodes: SynthesisGraphNode[],
+): ReagentWithAmount[] {
   let minMaxBadness = Number.POSITIVE_INFINITY;
   let minSumBadness = Number.POSITIVE_INFINITY;
   let minMaxBadnessResult: SynthesisGraphNode[] = [];
@@ -19,18 +21,26 @@ export function synthesisGraphSort(nodes: SynthesisGraphNode[]): ReagentWithAmou
     nodeMap.set(node.reagent_id, node);
   }
 
-  function getBadness(node: SynthesisGraphNode, L: SynthesisGraphNode[]): number {
+  function getBadness(
+    node: SynthesisGraphNode,
+    L: SynthesisGraphNode[],
+  ): number {
     L.push(node);
     const unsatisfied = L.filter(
       (e) =>
-        !e.base &&
-        !e.needed_by.every((f) => L.some((g) => g.reagent_id == f)),
+        !e.base && !e.needed_by.every((f) => L.some((g) => g.reagent_id == f)),
     ).length;
     L.pop();
     return unsatisfied;
   }
 
-  function search(node: SynthesisGraphNode, curMaxBadness: number, curSumBadness: number, L: SynthesisGraphNode[], S: SynthesisGraphNode[]) {
+  function search(
+    node: SynthesisGraphNode,
+    curMaxBadness: number,
+    curSumBadness: number,
+    L: SynthesisGraphNode[],
+    S: SynthesisGraphNode[],
+  ) {
     const badness = getBadness(node, L);
     const maxBadness = Math.max(curMaxBadness, badness);
     const sumBadness = curSumBadness + badness;
@@ -38,14 +48,22 @@ export function synthesisGraphSort(nodes: SynthesisGraphNode[]): ReagentWithAmou
       return;
     }
     L.push(node);
-    const newS = S.filter(e => e != node);
+    const newS = S.filter((e) => e != node);
     for (const reagent_id of node.needed_by) {
       const m = nodes.find((e) => e.reagent_id == reagent_id)!;
-      if (m.needs.every((e) => nodeMap.get(e)!.base || L.some(f => f.reagent_id == e))) {
+      if (
+        m.needs.every(
+          (e) => nodeMap.get(e)!.base || L.some((f) => f.reagent_id == e),
+        )
+      ) {
         newS.push(m);
       }
     }
-    if (maxBadness > minMaxBadness || (sumBadness + newS.filter(e => e.needed_by.length > 0).length) >= minSumBadness) {
+    if (
+      maxBadness > minMaxBadness ||
+      sumBadness + newS.filter((e) => e.needed_by.length > 0).length >=
+        minSumBadness
+    ) {
       L.pop();
       return;
     }
@@ -70,8 +88,12 @@ export function synthesisGraphSort(nodes: SynthesisGraphNode[]): ReagentWithAmou
     L.pop();
   }
 
-  const L: SynthesisGraphNode[] = nodes.filter(e => e.base);
-  const S = nodes.filter((e) => e.needs.length > 0 && e.needs.every((e) => L.some((f) => f.reagent_id == e)));
+  const L: SynthesisGraphNode[] = nodes.filter((e) => e.base);
+  const S = nodes.filter(
+    (e) =>
+      e.needs.length > 0 &&
+      e.needs.every((e) => L.some((f) => f.reagent_id == e)),
+  );
 
   for (const n of S) {
     search(n, 0, 0, [], S);
