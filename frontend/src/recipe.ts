@@ -214,7 +214,7 @@ amount.addEventListener("input", () => {
 document.getElementById("add-to-list")?.addEventListener("click", () => {
   const reagent_id = cachedChemical!.id;
   const reagent_amount = isNaN(Number.parseInt(amount.value))
-    ? 200
+    ? 180
     : Number.parseInt(amount.value);
   const list_name =
     prompt("List name? (only alphabet and spaces allowed)") ?? "";
@@ -446,7 +446,7 @@ function updateChemDetails(chemical: Reagent) {
   const synthesis = getSynthesis({
     reagent_id: chemical.id,
     amount: isNaN(Number.parseInt(amount.value))
-      ? 200
+      ? 180
       : Number.parseInt(amount.value),
   });
   const synthesisGraph = makeSynthesisGraph([synthesis]);
