@@ -5,6 +5,11 @@ import reagentData, {
   type ReagentWithAmount,
 } from "./data.ts";
 import Fuse from "fuse.js";
+import * as Comlink from "comlink";
+import { synthesisGraphSort, type SynthesisGraphNode } from "./synthesis-helper.ts";
+import SynthesisWorker from "./synthesis-worker.ts?worker";
+
+const synthesisGraphSortAsync: Comlink.Remote<(nodes: SynthesisGraphNode[]) => ReagentWithAmount[]> = Comlink.wrap(new SynthesisWorker());
 
 const groups = [...new Set(reagentData.reagents.map((e) => e.group))].sort();
 groups.push("Lists");
@@ -216,15 +221,6 @@ document.getElementById("add-to-list")?.addEventListener("click", () => {
   customListsSave();
 });
 
-interface SynthesisGraphNode {
-  reagent_id: string;
-  amount: number;
-  catalyst_amount: number;
-  base: boolean;
-  needed_by: string[]; // outgoing
-  needs: string[]; // incoming
-}
-
 function makeSynthesisGraph(
   reagents: ReagentWithAmount[],
 ): SynthesisGraphNode[] {
@@ -274,7 +270,8 @@ function makeSynthesisGraph(
         return node.amount != -1 && node.catalyst_amount != -1;
       });
       if (parent_resolved) {
-        let amount = reagents.find(e => e.reagent_id == node.reagent_id)?.amount ?? 0;
+        let amount =
+          reagents.find((e) => e.reagent_id == node.reagent_id)?.amount ?? 0;
         let catalyst_amount = 0;
         for (const needed_by of node.needed_by) {
           const parent_node = nodes.find((e) => e.reagent_id == needed_by)!;
@@ -300,29 +297,6 @@ function makeSynthesisGraph(
     }
   }
   return nodes;
-}
-
-function synthesisGraphSort(nodes: SynthesisGraphNode[]): ReagentWithAmount[] {
-  const L: ReagentWithAmount[] = [];
-  const S = nodes.filter((e) => e.needs.length == 0);
-  while (S.length > 0) {
-    const n = S.pop()!;
-    if (!n.base) {
-      L.push({
-        reagent_id: n.reagent_id,
-        amount: Math.max(n.catalyst_amount, n.amount),
-      });
-    }
-    for (const reagent_id of n.needed_by) {
-      const m = nodes.find((e) => e.reagent_id == reagent_id)!;
-      m.needs = m.needs.filter((e) => e != n.reagent_id);
-      if (m.needs.length == 0) {
-        S.push(m);
-      }
-    }
-    n.needed_by = [];
-  }
-  return L;
 }
 
 function updateListDetails(list: ReagentWithAmount[]) {
@@ -374,16 +348,26 @@ function updateListDetails(list: ReagentWithAmount[]) {
   } else {
     document.getElementById("leftovers-section")?.classList.remove("hidden");
   }
-  const requiredIntermediates = synthesisGraphSort(synthesisGraph);
+
+  const elem = document.createElement("li");
+  elem.classList.add("recipe");
+  elem.textContent = "Calculating recipe, please wait.";
+  document.getElementById("steps")?.replaceChildren(elem);
+  const curHash = document.location.hash;
+  synthesisGraphSortAsync(synthesisGraph).then(requiredIntermediates => {
+    if (document.location.hash != curHash) {
+      return;
+    }
   document.getElementById("steps")?.replaceChildren();
-  for (const intermediate of requiredIntermediates) {
-    const recipe = getCanonicalRecipe(intermediate.reagent_id)!;
-    const batchsize = recipe.results![0].amount;
-    const num_batches = Math.ceil(intermediate.amount / batchsize);
-    document
-      .getElementById("steps")
-      ?.appendChild(createRecipeElement(recipe, num_batches));
-  }
+    for (const intermediate of requiredIntermediates) {
+      const recipe = getCanonicalRecipe(intermediate.reagent_id)!;
+      const batchsize = recipe.results![0].amount;
+      const num_batches = Math.ceil(intermediate.amount / batchsize);
+      document
+        .getElementById("steps")
+        ?.appendChild(createRecipeElement(recipe, num_batches));
+    }
+  });
 }
 
 function updateChemDetails(chemical: Reagent) {
@@ -392,12 +376,14 @@ function updateChemDetails(chemical: Reagent) {
   cachedChemical = chemical;
   document.getElementById("amount-chem")!.textContent = chemical.name;
   document.getElementById("chem")!.style.borderColor = chemical.color;
-  const synthesisGraph = makeSynthesisGraph([{
-    reagent_id: chemical.id,
-    amount: isNaN(Number.parseInt(amount.value))
-      ? 180
-      : Number.parseInt(amount.value),
-  }]);
+  const synthesisGraph = makeSynthesisGraph([
+    {
+      reagent_id: chemical.id,
+      amount: isNaN(Number.parseInt(amount.value))
+        ? 180
+        : Number.parseInt(amount.value),
+    },
+  ]);
   document.getElementById("ingredients")?.replaceChildren();
   document.getElementById("leftovers")?.replaceChildren();
   for (const node of synthesisGraph) {
@@ -437,7 +423,6 @@ function updateChemDetails(chemical: Reagent) {
     document.getElementById("leftovers-section")?.classList.remove("hidden");
   }
   const requiredIntermediates = synthesisGraphSort(synthesisGraph);
-  document.getElementById("steps")?.replaceChildren();
   for (const intermediate of requiredIntermediates) {
     const recipe = getCanonicalRecipe(intermediate.reagent_id)!;
     const batchsize = recipe.results![0].amount;
