@@ -57,7 +57,7 @@
 }
 
 .search-results {
-  @apply absolute z-100 top-14 w-full max-w-xs max-h-72 overflow-scroll origin-top-right rounded-md bg-white shadow-lg outline-1 outline-black/5 dark:bg-gray-800 dark:shadow-none dark:-outline-offset-1 dark:outline-white/10;
+  @apply absolute z-100 top-28 sm:top-14 w-full max-w-xs max-h-72 overflow-scroll origin-top-right rounded-md bg-white shadow-lg outline-1 outline-black/5 dark:bg-gray-800 dark:shadow-none dark:-outline-offset-1 dark:outline-white/10;
 }
 
 .search-no-results {

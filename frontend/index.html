@@ -8,10 +8,12 @@
   </head>
   <body class="h-full">
     <nav
-      class="fixed w-full bg-white shadow-sm dark:bg-gray-800 dark:shadow-none dark:after:pointer-events-none dark:after:absolute dark:after:inset-x-0 dark:after:bottom-0 dark:after:h-px dark:after:bg-white/10"
+      class="sm:fixed w-full bg-white shadow-sm dark:bg-gray-800 dark:shadow-none dark:after:pointer-events-none dark:after:absolute dark:after:inset-x-0 dark:after:bottom-0 dark:after:h-px dark:after:bg-white/10"
     >
       <div class="mx-auto max-w-7xl px-8">
-        <div class="flex h-16 justify-between">
+        <div
+          class="flex flex-col sm:flex-row h-32 sm:h-16 max-sm:items-center justify-evenly sm:justify-between"
+        >
           <div class="flex px-0">
             <div class="flex shrink-0 items-center">
               <img src="/favicon.png" class="h-8 w-auto" />
@@ -29,7 +31,9 @@
               >
             </div>
           </div>
-          <div class="flex flex-1 items-center px-2 ml-6 justify-end">
+          <div
+            class="flex sm:flex-1 items-center sm:px-2 sm:ml-6 sm:justify-end"
+          >
             <div class="grid w-full grid-cols-1 max-w-xs">
               <input
                 type="search"
@@ -58,24 +62,24 @@
       </div>
     </nav>
     <div
-      class="fixed inset-y-0 z-50 flex w-108 flex-row dark:bg-gray-900 mt-16"
+      class="sm:fixed sm:inset-y-0 sm:z-50 flex w-full sm:w-108 flex-col sm:flex-row dark:bg-gray-900 sm:mt-16"
     >
       <div
-        class="flex grow max-w-36 flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 py-4 dark:border-white/10 dark:bg-black/10"
+        class="flex grow w-full max-sm:h-48 max-sm:border-b sm:max-w-36 flex-col gap-y-5 overflow-y-auto sm:border-r border-gray-200 bg-white px-6 py-4 dark:border-white/10 dark:bg-black/10"
       >
         <nav class="flex flex-1 flex-col">
           <ul role="list" id="groups" class="-mx-2 space-y-1"></ul>
         </nav>
       </div>
       <div
-        class="flex grow max-w-72 flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 py-4 dark:border-white/10 dark:bg-black/10"
+        class="flex grow w-full max-sm:h-48 max-sm:border-b sm:max-w-36 flex-col gap-y-5 overflow-y-auto sm:border-r border-gray-200 bg-white px-6 py-4 dark:border-white/10 dark:bg-black/10"
       >
         <nav class="flex flex-1 flex-col">
           <ul role="list" id="chemicals" class="-mx-2 space-y-1"></ul>
         </nav>
       </div>
     </div>
-    <main class="pl-108 pt-16 w-full h-full">
+    <main class="sm:pl-108 sm:pt-16 w-full sm:h-full">
       <div
         id="placeholder"
         class="p-8 dark:text-white w-full h-full flex items-center justify-center"
