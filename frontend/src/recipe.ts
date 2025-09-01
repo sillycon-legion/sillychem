@@ -137,7 +137,12 @@ function createChemElement(result: ReagentWithAmount): HTMLLIElement {
   return resultElem;
 }
 
+const recipeCache: Record<string, ReactionRecipe | null> = {};
+
 function getCanonicalRecipe(chemical: string): ReactionRecipe | null {
+  if (Object.prototype.hasOwnProperty.call(recipeCache, chemical)) {
+    return recipeCache[chemical];
+  }
   const synthesis = reagentData.recipes.filter(
     (recipe) =>
       recipe.type == "Reaction" &&
@@ -148,60 +153,11 @@ function getCanonicalRecipe(chemical: string): ReactionRecipe | null {
       recipe.results[0].reagent_id == chemical,
   );
   if (synthesis.length == 1) {
-    return synthesis[0] as ReactionRecipe;
+    recipeCache[chemical] = synthesis[0] as ReactionRecipe;
   } else {
-    return null;
+    recipeCache[chemical] = null;
   }
-}
-
-type SynthesisResult = SynthesisStep | SynthesisBase;
-
-interface SynthesisBase {
-  type: "base";
-  reagent_id: string;
-  amount: number;
-}
-
-interface SynthesisStep {
-  type: "step";
-  id: string;
-  machine?: string;
-  min_temp?: number;
-  max_temp?: number;
-  reactants: SynthesisResult[];
-  catalysts?: SynthesisResult[];
-  result: ReagentWithAmount;
-  leftover: number;
-}
-
-function getSynthesis(chemical: ReagentWithAmount): SynthesisResult {
-  const recipe = getCanonicalRecipe(chemical.reagent_id);
-  if (recipe == null) {
-    return {
-      type: "base",
-      reagent_id: chemical.reagent_id,
-      amount: chemical.amount,
-    };
-  } else {
-    const batchsize = recipe.results![0]!.amount;
-    const num_batches = Math.ceil(chemical.amount / batchsize);
-    return {
-      type: "step",
-      id: recipe.id,
-      machine: recipe.machine,
-      min_temp: recipe.min_temp,
-      max_temp: recipe.max_temp,
-      reactants: recipe.reactants.map((reactant) =>
-        getSynthesis({
-          reagent_id: reactant.reagent_id,
-          amount: reactant.amount * num_batches,
-        }),
-      ),
-      catalysts: recipe.catalysts?.map(getSynthesis),
-      result: chemical,
-      leftover: batchsize * num_batches - chemical.amount,
-    };
-  }
+  return recipeCache[chemical];
 }
 
 let cachedChemical: Reagent | null = null;
@@ -270,15 +226,37 @@ interface SynthesisGraphNode {
 }
 
 function makeSynthesisGraph(
-  syntheses: SynthesisResult[],
+  reagents: ReagentWithAmount[],
 ): SynthesisGraphNode[] {
   const nodes: SynthesisGraphNode[] = [];
-  for (const node of syntheses.flatMap((e) => makeSynthesisGraphInner(e))) {
-    const node_idx = nodes.findIndex((e) => e.reagent_id == node.reagent_id);
-    if (node_idx == -1) {
-      nodes.push(node);
+  const searchQueue: string[] = reagents.map((e) => e.reagent_id);
+  while (searchQueue.length > 0) {
+    const elem = searchQueue.shift()!;
+    if (nodes.some((e) => e.reagent_id == elem)) continue;
+    const recipe = getCanonicalRecipe(elem);
+    if (recipe == null) {
+      nodes.push({
+        reagent_id: elem,
+        amount: -1,
+        catalyst_amount: -1,
+        base: true,
+        needs: [],
+        needed_by: [],
+      });
     } else {
-      nodes[node_idx].amount += node.amount;
+      const needs = [
+        ...recipe.reactants.map((e) => e.reagent_id),
+        ...(recipe.catalysts ?? []).map((e) => e.reagent_id),
+      ];
+      nodes.push({
+        reagent_id: elem,
+        amount: -1,
+        catalyst_amount: -1,
+        base: false,
+        needs: needs,
+        needed_by: [],
+      });
+      searchQueue.push(...needs);
     }
   }
   for (const node of nodes) {
@@ -286,70 +264,42 @@ function makeSynthesisGraph(
       nodes.find((e) => e.reagent_id == need)!.needed_by.push(node.reagent_id);
     }
   }
+  while (nodes.some((e) => e.amount == -1 || e.catalyst_amount == -1)) {
+    for (const node of nodes) {
+      if (node.amount != -1 && node.catalyst_amount != -1) {
+        continue;
+      }
+      const parent_resolved = node.needed_by.every((needed_by) => {
+        const node = nodes.find((e) => e.reagent_id == needed_by)!;
+        return node.amount != -1 && node.catalyst_amount != -1;
+      });
+      if (parent_resolved) {
+        let amount = reagents.find(e => e.reagent_id == node.reagent_id)?.amount ?? 0;
+        let catalyst_amount = 0;
+        for (const needed_by of node.needed_by) {
+          const parent_node = nodes.find((e) => e.reagent_id == needed_by)!;
+          const to_make = Math.max(
+            parent_node.amount,
+            parent_node.catalyst_amount,
+          );
+          const recipe = getCanonicalRecipe(needed_by)!;
+          const batch_size = recipe.results![0].amount;
+          const num_batches = Math.ceil(to_make / batch_size);
+          amount +=
+            (recipe.reactants.find((e) => e.reagent_id == node.reagent_id)
+              ?.amount ?? 0) * num_batches;
+          catalyst_amount = Math.max(
+            catalyst_amount,
+            recipe.catalysts?.find((e) => e.reagent_id == node.reagent_id)
+              ?.amount ?? 0,
+          );
+        }
+        node.amount = amount;
+        node.catalyst_amount = catalyst_amount;
+      }
+    }
+  }
   return nodes;
-}
-
-function makeSynthesisGraphInner(
-  synthesis: SynthesisResult,
-  catalyst?: boolean,
-): SynthesisGraphNode[] {
-  if (synthesis.type == "base") {
-    return [
-      {
-        reagent_id: synthesis.reagent_id,
-        amount: catalyst == true ? 0 : synthesis.amount,
-        catalyst_amount: catalyst == true ? synthesis.amount : 0,
-        base: true,
-        needed_by: [],
-        needs: [],
-      },
-    ];
-  } else {
-    const needs = [];
-    needs.push(...synthesis.reactants.map(synthesisReagentId));
-    needs.push(...(synthesis.catalysts ?? []).map(synthesisReagentId));
-    const result: SynthesisGraphNode[] = [
-      {
-        reagent_id: synthesis.result.reagent_id,
-        amount: catalyst == true ? 0 : synthesis.result.amount,
-        catalyst_amount: catalyst == true ? synthesis.result.amount : 0,
-        base: false,
-        needed_by: [],
-        needs: needs,
-      },
-    ];
-    for (const node of synthesis.reactants.flatMap((e) =>
-      makeSynthesisGraphInner(e),
-    )) {
-      const node_idx = result.findIndex((e) => e.reagent_id == node.reagent_id);
-      if (node_idx == -1) {
-        result.push(node);
-      } else {
-        result[node_idx].amount += node.amount;
-        result[node_idx].catalyst_amount += node.catalyst_amount;
-      }
-    }
-    for (const node of (synthesis.catalysts ?? []).flatMap((e) =>
-      makeSynthesisGraphInner(e, true),
-    )) {
-      const node_idx = result.findIndex((e) => e.reagent_id == node.reagent_id);
-      if (node_idx == -1) {
-        result.push(node);
-      } else {
-        result[node_idx].amount += node.amount;
-        result[node_idx].catalyst_amount += node.catalyst_amount;
-      }
-    }
-    return result;
-  }
-}
-
-function synthesisReagentId(synthesis: SynthesisResult): string {
-  if (synthesis.type == "base") {
-    return synthesis.reagent_id;
-  } else {
-    return synthesis.result.reagent_id;
-  }
 }
 
 function synthesisGraphSort(nodes: SynthesisGraphNode[]): ReagentWithAmount[] {
@@ -385,8 +335,7 @@ function updateListDetails(list: ReagentWithAmount[]) {
       .getElementById("results")
       ?.appendChild(createChemElement(ingredient));
   }
-  const syntheses = list.map(getSynthesis);
-  const synthesisGraph = makeSynthesisGraph(syntheses);
+  const synthesisGraph = makeSynthesisGraph(list);
   document.getElementById("ingredients")?.replaceChildren();
   document.getElementById("leftovers")?.replaceChildren();
   for (const node of synthesisGraph) {
@@ -443,13 +392,12 @@ function updateChemDetails(chemical: Reagent) {
   cachedChemical = chemical;
   document.getElementById("amount-chem")!.textContent = chemical.name;
   document.getElementById("chem")!.style.borderColor = chemical.color;
-  const synthesis = getSynthesis({
+  const synthesisGraph = makeSynthesisGraph([{
     reagent_id: chemical.id,
     amount: isNaN(Number.parseInt(amount.value))
       ? 180
       : Number.parseInt(amount.value),
-  });
-  const synthesisGraph = makeSynthesisGraph([synthesis]);
+  }]);
   document.getElementById("ingredients")?.replaceChildren();
   document.getElementById("leftovers")?.replaceChildren();
   for (const node of synthesisGraph) {
