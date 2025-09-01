@@ -343,9 +343,9 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
       break;
     case "ModifyBleedAmount":
       if (effect.effect.amount > 0) {
-        entry.append("Reduces bleeding.");
-      } else {
         entry.append("Induces bleeding.");
+      } else {
+        entry.append("Reduces bleeding.");
       }
       break;
     case "AdjustTemperature":
