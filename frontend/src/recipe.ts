@@ -423,6 +423,7 @@ function updateChemDetails(chemical: Reagent) {
     document.getElementById("leftovers-section")?.classList.remove("hidden");
   }
   const requiredIntermediates = synthesisGraphSort(synthesisGraph);
+  document.getElementById("steps")?.replaceChildren();
   for (const intermediate of requiredIntermediates) {
     const recipe = getCanonicalRecipe(intermediate.reagent_id)!;
     const batchsize = recipe.results![0].amount;
