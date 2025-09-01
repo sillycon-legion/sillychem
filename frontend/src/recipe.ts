@@ -142,7 +142,7 @@ function getCanonicalRecipe(chemical: string): ReactionRecipe | null {
     (recipe) =>
       recipe.type == "Reaction" &&
       recipe.effects == undefined &&
-      (recipe.reactants.length + (recipe.catalysts ?? []).length) != 1 &&
+      recipe.reactants.length + (recipe.catalysts ?? []).length != 1 &&
       recipe.results != undefined &&
       recipe.results.length == 1 &&
       recipe.results[0].reagent_id == chemical,
@@ -283,7 +283,7 @@ function makeSynthesisGraph(
   }
   for (const node of nodes) {
     for (const need of node.needs) {
-      nodes.find(e => e.reagent_id == need)!.needed_by.push(node.reagent_id);
+      nodes.find((e) => e.reagent_id == need)!.needed_by.push(node.reagent_id);
     }
   }
   return nodes;
