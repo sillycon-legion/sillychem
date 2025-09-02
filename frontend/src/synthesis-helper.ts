@@ -12,10 +12,6 @@ export interface SynthesisGraphNode {
 export function synthesisGraphSort(
   nodes: SynthesisGraphNode[],
 ): ReagentWithAmount[] {
-  let minMaxBadness = Number.POSITIVE_INFINITY;
-  let minSumBadness = Number.POSITIVE_INFINITY;
-  let minMaxBadnessResult: SynthesisGraphNode[] = [];
-
   const nodeMap: Map<string, SynthesisGraphNode> = new Map();
   for (const node of nodes) {
     nodeMap.set(node.reagent_id, node);
@@ -34,20 +30,21 @@ export function synthesisGraphSort(
     return unsatisfied;
   }
 
+  const badnessCache: Map<string, [number, number, SynthesisGraphNode[]]> = new Map();
+
   function search(
     node: SynthesisGraphNode,
-    curMaxBadness: number,
-    curSumBadness: number,
     L: SynthesisGraphNode[],
     S: SynthesisGraphNode[],
-  ) {
+  ): [number, number, SynthesisGraphNode[]] {
     const badness = getBadness(node, L);
-    const maxBadness = Math.max(curMaxBadness, badness);
-    const sumBadness = curSumBadness + badness;
-    if (maxBadness > minMaxBadness || sumBadness >= minSumBadness) {
-      return;
-    }
     L.push(node);
+    const badnessCacheKey = L.map(e => e.reagent_id).sort().join("|");
+    if (badnessCache.has(badnessCacheKey)) {
+      const cached = badnessCache.get(badnessCacheKey)!;
+      L.pop();
+      return [cached[0], cached[1], [node, ...cached[2]]];
+    }
     const newS = S.filter((e) => e != node);
     for (const reagent_id of node.needed_by) {
       const m = nodes.find((e) => e.reagent_id == reagent_id)!;
@@ -59,33 +56,24 @@ export function synthesisGraphSort(
         newS.push(m);
       }
     }
-    if (
-      maxBadness > minMaxBadness ||
-      sumBadness + newS.filter((e) => e.needed_by.length > 0).length >=
-        minSumBadness
-    ) {
-      L.pop();
-      return;
-    }
     if (newS.length == 0) {
-      minMaxBadness = maxBadness;
-      minSumBadness = sumBadness;
-      minMaxBadnessResult = [...L];
       L.pop();
-      return;
+      return [badness, badness, [node]];
     }
-    newS.sort((a, b) => {
-      const diff = getBadness(a, L) - getBadness(b, L);
-      if (diff != 0) {
-        return diff;
-      } else {
-        return a.reagent_id.localeCompare(b.reagent_id);
-      }
-    });
+    let minMaxBadness = Number.POSITIVE_INFINITY;
+    let minSumBadness = Number.POSITIVE_INFINITY;
+    let minMaxBadnessResult: SynthesisGraphNode[] = [];
     for (const n of newS) {
-      search(n, maxBadness, sumBadness, L, newS);
+      const result = search(n, L, newS);
+      if (result[0] <= minMaxBadness && result[1] < minSumBadness) {
+        minMaxBadness = result[0];
+        minSumBadness = result[1];
+        minMaxBadnessResult = result[2];
+      }
     }
     L.pop();
+    badnessCache.set(badnessCacheKey, [Math.max(badness, minMaxBadness), badness + minSumBadness, minMaxBadnessResult]);
+    return [Math.max(badness, minMaxBadness), badness + minSumBadness, [node, ...minMaxBadnessResult]];
   }
 
   const L: SynthesisGraphNode[] = nodes.filter((e) => e.base);
@@ -95,8 +83,16 @@ export function synthesisGraphSort(
       e.needs.every((e) => L.some((f) => f.reagent_id == e)),
   );
 
+  let minMaxBadness = Number.POSITIVE_INFINITY;
+  let minSumBadness = Number.POSITIVE_INFINITY;
+  let minMaxBadnessResult: SynthesisGraphNode[] = [];
   for (const n of S) {
-    search(n, 0, 0, [], S);
+    const result = search(n, L, S);
+    if (result[0] <= minMaxBadness && result[1] < minSumBadness) {
+      minMaxBadness = result[0];
+      minSumBadness = result[1];
+      minMaxBadnessResult = result[2];
+    }
   }
 
   return minMaxBadnessResult.map((e) => {
