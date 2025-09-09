@@ -11,6 +11,7 @@ import {
   type SynthesisGraphNode,
 } from "./synthesis-helper.ts";
 import SynthesisWorker from "./synthesis-worker.ts?worker";
+import Color from "colorjs.io";
 
 const synthesisGraphSortAsync: Comlink.Remote<
   (nodes: SynthesisGraphNode[]) => ReagentWithAmount[]
@@ -307,13 +308,25 @@ function makeSynthesisGraph(
 function updateListDetails(list: ReagentWithAmount[]) {
   document.getElementById("single-chem-amount")!.classList.add("hidden");
   document.getElementById("results-section")!.classList.remove("hidden");
-  document.getElementById("chem")!.style.borderColor = "#4f39f6";
   document.getElementById("results")?.replaceChildren();
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let tot = 0;
   for (const ingredient of list) {
+    const reagent = reagentData.reagents.find((e) => e.id == ingredient.reagent_id)!;
+    const color = new Color(reagent.color);
+    r += color.srgb_linear.r * ingredient.amount;
+    g += color.srgb_linear.g * ingredient.amount;
+    b += color.srgb_linear.b * ingredient.amount;
+    tot += ingredient.amount;
     document
       .getElementById("results")
       ?.appendChild(createChemElement(ingredient));
   }
+  const color = new Color("srgb-linear", [r / tot, g / tot, b / tot]);
+  document.getElementById("chem")!.style.borderColor = color.toString();
+
   const synthesisGraph = makeSynthesisGraph(list);
   document.getElementById("ingredients")?.replaceChildren();
   document.getElementById("leftovers")?.replaceChildren();

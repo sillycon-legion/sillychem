@@ -17,6 +17,7 @@
     "vite": "^7.1.2"
   },
   "dependencies": {
+    "colorjs.io": "^0.5.2",
     "comlink": "^4.4.2",
     "fuse.js": "^7.1.0"
   }
