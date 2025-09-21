@@ -129,11 +129,11 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
           break;
         case "TotalDamage":
           if (condition.min != undefined && condition.max != undefined) {
-            conditionelem.textContent = `Total damage is between ${condition.min}K and ${condition.max}K`;
+            conditionelem.textContent = `Total damage is between ${condition.min} and ${condition.max}`;
           } else if (condition.min != undefined) {
-            conditionelem.textContent = `Total damage is over ${condition.min}K`;
+            conditionelem.textContent = `Total damage is over ${condition.min}`;
           } else if (condition.max != undefined) {
-            conditionelem.textContent = `Total damage is under ${condition.max}K`;
+            conditionelem.textContent = `Total damage is under ${condition.max}`;
           }
           break;
         case "OrganType":
