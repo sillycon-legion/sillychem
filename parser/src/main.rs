@@ -794,7 +794,7 @@ impl ConditionalEffect {
                 }
                 Effect::EvenHealthChange { damages }
             }
-            "type:ChemVomit" => Effect::ChemVomit,
+            "type:Vomit" => Effect::ChemVomit,
             "type:AdjustReagent" => Effect::AdjustReagent {
                 by: effect
                     .index("amount")
@@ -824,6 +824,7 @@ impl ConditionalEffect {
                     "Add" => ModifyStatusEffectAction::Add,
                     "Remove" => ModifyStatusEffectAction::Remove,
                     "Set" => ModifyStatusEffectAction::Set,
+                    "Update" => ModifyStatusEffectAction::Update,
                     unk => {
                         return Err(eyre!(
                             "Unknown ModifyStatusEffect.type {unk} for effect in {id}"
@@ -837,7 +838,7 @@ impl ConditionalEffect {
                 effect: bundle
                     .loc(
                         &format!(
-                            "reagent-effect-status-effect-{}",
+                            "entity-effect-status-effect-{}",
                             effect.index("key").as_str().ok_or(eyre!(
                                 "Missing GenericStatusEffect.key for effect in {id}"
                             ))?
@@ -849,6 +850,7 @@ impl ConditionalEffect {
                     "Add" => ModifyStatusEffectAction::Add,
                     "Remove" => ModifyStatusEffectAction::Remove,
                     "Set" => ModifyStatusEffectAction::Set,
+                    "Update" => ModifyStatusEffectAction::Update,
                     unk => {
                         return Err(eyre!(
                             "Unknown ModifyStatusEffect.type {unk} for effect in {id}"
@@ -857,7 +859,22 @@ impl ConditionalEffect {
                 },
                 time: effect.index("time").as_f64_alt().unwrap_or(2.0),
             },
-            "type:MovespeedModifier" => Effect::MovespeedModifier {
+            "type:ModifyKnockdown" => Effect::ModifyStatusEffect {
+                effect: "Knockdown".to_string(),
+                action: match effect.index("type").as_str().unwrap_or("Add") {
+                    "Add" => ModifyStatusEffectAction::Add,
+                    "Remove" => ModifyStatusEffectAction::Remove,
+                    "Set" => ModifyStatusEffectAction::Set,
+                    "Update" => ModifyStatusEffectAction::Update,
+                    unk => {
+                        return Err(eyre!(
+                            "Unknown ModifyStatusEffect.type {unk} for effect in {id}"
+                        ));
+                    }
+                },
+                time: effect.index("time").as_f64_alt().unwrap_or(2.0),
+            },
+            "type:MovementSpeedModifier" => Effect::MovespeedModifier {
                 walk: effect
                     .index("walkSpeedModifier")
                     .as_f64_alt()
@@ -875,14 +892,14 @@ impl ConditionalEffect {
             "type:ModifyBloodLevel" => Effect::ModifyBloodLevel {
                 amount: effect.index("amount").as_f64_alt().unwrap_or(1.0),
             },
-            "type:FlammableReaction" => Effect::FlammableReaction,
-            "type:ModifyBleedAmount" => Effect::ModifyBleedAmount {
+            "type:Flammable" => Effect::FlammableReaction,
+            "type:ModifyBleed" => Effect::ModifyBleedAmount {
                 amount: effect.index("amount").as_f64_alt().unwrap_or(-1.0),
             },
             "type:AdjustTemperature" => Effect::AdjustTemperature {
                 amount: effect.index("amount").as_f64_alt().unwrap_or(0.0),
             },
-            "type:ChemCleanBloodstream" => Effect::ChemCleanBloodstream,
+            "type:CleanBloodstream" => Effect::ChemCleanBloodstream,
             "type:Polymorph" => Effect::Polymorph {
                 target: polymorphs
                     .get(
@@ -902,7 +919,7 @@ impl ConditionalEffect {
             "type:ReduceRotting" => Effect::ReduceRotting {
                 amount: effect.index("seconds").as_f64_alt().unwrap_or(10.0),
             },
-            "type:ChemHealEyeDamage" => Effect::ChemHealEyeDamage {
+            "type:EyeDamage" => Effect::ChemHealEyeDamage {
                 amount: effect.index("amount").as_f64_alt().unwrap_or(-1.0),
             },
             "type:MakeSentient" => Effect::MakeSentient,
@@ -949,13 +966,13 @@ impl ConditionalEffect {
                     .as_f64_alt()
                     .unwrap_or(30.0) as i64,
             },
-            "type:ExplosionReactionEffect" => Effect::ReactionExplosion,
+            "type:Explosion" => Effect::ReactionExplosion,
             "type:AreaReactionEffect" => Effect::ReactionFoamOrSmoke {
                 duration: effect.index("duration").as_f64_alt().unwrap_or(10.0),
             },
-            "type:EmpReactionEffect" => Effect::ReactionEmp,
-            "type:FlashReactionEffect" => Effect::ReactionFlash,
-            "type:CreateEntityReactionEffect" => Effect::ReactionCreateEntity {
+            "type:Emp" => Effect::ReactionEmp,
+            "type:Flash" => Effect::ReactionFlash,
+            "type:SpawnEntity" => Effect::ReactionCreateEntity {
                 name: effect
                     .index("entity")
                     .as_str()
@@ -1010,7 +1027,7 @@ impl ConditionalEffect {
                 continue;
             };
             conditions.push(match suffix.as_str() {
-                "type:ReagentThreshold" => EffectCondition::ReagentThreshold {
+                "type:ReagentCondition" => EffectCondition::ReagentThreshold {
                     reagent: condition
                         .index("reagent")
                         .as_str()
@@ -1019,32 +1036,35 @@ impl ConditionalEffect {
                     min: condition.index("min").as_f64_alt(),
                     max: condition.index("max").as_f64_alt(),
                 },
-                "type:Temperature" => EffectCondition::Temperature {
+                "type:TemperatureCondition" => EffectCondition::Temperature {
                     min: condition.index("min").as_f64_alt(),
                     max: condition.index("max").as_f64_alt(),
                 },
-                "type:TotalDamage" => EffectCondition::TotalDamage {
+                "type:TotalDamageCondition" => EffectCondition::TotalDamage {
                     min: condition.index("min").as_f64_alt(),
                     max: condition.index("max").as_f64_alt(),
                 },
-                "type:OrganType" => {
-                    EffectCondition::OrganType {
-                        kind: metabolizer_types
-                            .get(condition.index("type").as_str().ok_or(eyre!(
-                                "Missing OrganType.type for effect condition in {id}"
-                            ))?)
-                            .ok_or(eyre!("Invalid OrganType.type for effect condition in {id}"))?
-                            .to_string(),
-                        whitelist: condition.index("shouldHave").as_bool() != Some(false),
-                    }
-                }
-                "type:HasTag" => EffectCondition::HasTag {
+                "type:MetabolizerTypeCondition" => EffectCondition::MetabolizerType {
+                    kinds: condition
+                        .index("type")
+                        .as_vec()
+                        .ok_or(eyre!(
+                            "Missing MetabolizerTypeCondition.type for effect condition in {id}"
+                        ))?
+                        .iter()
+                        .filter_map(|e| e.as_str())
+                        .filter_map(|e| metabolizer_types.get(e))
+                        .cloned()
+                        .collect(),
+                    whitelist: condition.index("inverted").as_bool() != Some(true),
+                },
+                "type:TagCondition" => EffectCondition::HasTag {
                     tag: condition
                         .index("tag")
                         .as_str()
                         .ok_or(eyre!("Missing HasTag.tag for effect condition in {id}"))?
                         .to_string(),
-                    whitelist: condition.index("invert").as_bool() != Some(true),
+                    whitelist: condition.index("inverted").as_bool() != Some(true),
                 },
                 "type:MobStateCondition" => EffectCondition::MobStateCondition {
                     state: condition
@@ -1053,7 +1073,7 @@ impl ConditionalEffect {
                         .unwrap_or("Alive")
                         .to_string(),
                 },
-                "type:Hunger" => EffectCondition::Hunger {
+                "type:HungerCondition" => EffectCondition::Hunger {
                     min: condition.index("min").as_f64_alt(),
                     max: condition.index("max").as_f64_alt(),
                 },
@@ -1093,8 +1113,8 @@ enum EffectCondition {
         #[serde(skip_serializing_if = "Option::is_none")]
         max: Option<f64>,
     },
-    OrganType {
-        kind: String,
+    MetabolizerType {
+        kinds: Vec<String>,
         whitelist: bool,
     },
     HasTag {
@@ -1235,6 +1255,7 @@ enum ModifyStatusEffectAction {
     Add,
     Remove,
     Set,
+    Update,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

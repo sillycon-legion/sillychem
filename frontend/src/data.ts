@@ -19,7 +19,7 @@ type EffectCondition =
   | ReagentThresholdEffectCondition
   | TemperatureEffectCondition
   | TotalDamageEffectCondition
-  | OrganTypeEffectCondition
+  | MetabolizerTypeEffectCondition
   | HasTagEffectCondition
   | MobStateConditionEffectCondition
   | HungerEffectCondition;
@@ -43,9 +43,9 @@ interface TotalDamageEffectCondition {
   max?: number;
 }
 
-interface OrganTypeEffectCondition {
-  type: "OrganType";
-  kind: string;
+interface MetabolizerTypeEffectCondition {
+  type: "MetabolizerType";
+  kinds: string[];
   whitelist: boolean;
 }
 
@@ -155,7 +155,7 @@ interface ElectrocuteEffect {
 interface ModifyStatusEffectEffect {
   type: "ModifyStatusEffect";
   effect: string;
-  action: "Add" | "Remove" | "Set";
+  action: "Add" | "Remove" | "Set" | "Update";
   time: number;
 }
 

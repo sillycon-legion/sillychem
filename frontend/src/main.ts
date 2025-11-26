@@ -90,6 +90,16 @@ function createRecipeIoElement(result: ReagentWithAmount): HTMLLIElement {
   return resultElem;
 }
 
+function orlist(elems: string[]): string {
+  if (elems.length == 1) {
+    return elems[0];
+  } else if (elems.length == 2) {
+    return `${elems[0]} or ${elems[1]}`;
+  } else {
+    return elems.slice(0, -1).join(", ") + ", or " + elems[elems.length - 1];
+  }
+}
+
 function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
   if (effect.conditions != undefined) {
     if (effect.probability != 1.0) {
@@ -136,11 +146,11 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
             conditionelem.textContent = `Total damage is under ${condition.max}`;
           }
           break;
-        case "OrganType":
+        case "MetabolizerType":
           if (condition.whitelist) {
-            conditionelem.textContent = `Metabolized by ${condition.kind}`;
+            conditionelem.textContent = `Metabolized by ${orlist(condition.kinds)}`;
           } else {
-            conditionelem.textContent = `Not metabolized by ${condition.kind}`;
+            conditionelem.textContent = `Not metabolized by ${orlist(condition.kinds)}`;
           }
           break;
         case "HasTag":
@@ -297,6 +307,11 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
           );
           break;
         case "Set":
+          entry.append(
+            `Causes ${effect.effect.effect} for at least ${effect.effect.time}s without accumulation.`,
+          );
+          break;
+        case "Update":
           entry.append(
             `Causes ${effect.effect.effect} for at least ${effect.effect.time}s without accumulation.`,
           );
