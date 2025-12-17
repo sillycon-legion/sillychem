@@ -79,3 +79,11 @@
 #results {
   @apply pl-4 list-disc;
 }
+
+.mutation-chem-groups {
+  @apply pl-4 list-disc;
+}
+
+.mutation-chems {
+  @apply pl-4 list-disc;
+}

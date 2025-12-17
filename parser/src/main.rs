@@ -140,6 +140,8 @@ fn main() -> Result<()> {
     let mut damage_types: HashMap<String, String> = HashMap::new();
     let mut metabolizer_types: HashMap<String, String> = HashMap::new();
     let mut polymorphs: HashMap<String, String> = HashMap::new();
+    let mut weighted_random_fill_solutions: HashMap<String, Vec<RandomReagentFillEntry>> =
+        HashMap::new();
     let mut recipes = vec![];
     let mut reagents = vec![];
     println!("Reading prototypes");
@@ -175,7 +177,18 @@ fn main() -> Result<()> {
                         AbstractEntity {
                             id: id.to_owned(),
                             is_abstract: prototype.index("abstract").as_bool() == Some(true),
-                            parent: prototype.index("parent").as_str().map(ToOwned::to_owned),
+                            parent: if let Some(parent) = prototype.index("parent").as_vec() {
+                                parent
+                                    .iter()
+                                    .filter_map(|e| Some(e.as_str()?.to_owned()))
+                                    .collect()
+                            } else if let Some(parent) =
+                                prototype.index("parent").as_str().map(ToOwned::to_owned)
+                            {
+                                vec![parent]
+                            } else {
+                                Vec::new()
+                            },
                             name: prototype.index("name").as_str().map(ToOwned::to_owned),
                             desc: prototype.index("desc").as_str().map(ToOwned::to_owned),
                             components: prototype
@@ -332,6 +345,33 @@ fn main() -> Result<()> {
                             .to_string(),
                     );
                 }
+                "weightedRandomFillSolution" => {
+                    let id = prototype.index("id").as_str().ok_or(eyre!(
+                        "Prototype yml {} has a weighted random fill solution without an id?",
+                        entry.display()
+                    ))?;
+                    weighted_random_fill_solutions.insert(
+                        id.to_owned(),
+                        prototype
+                            .index("fills")
+                            .as_vec()
+                            .ok_or(eyre!("Weighted random fill solution {id} has no entries?"))?
+                            .iter()
+                            .filter_map(|e| {
+                                Some(RandomReagentFillEntry {
+                                    quantity: e.index("quantity").as_f64_alt()?,
+                                    weight: e.index("weight").as_f64_alt()?,
+                                    reagents: e
+                                        .index("reagents")
+                                        .as_vec()?
+                                        .iter()
+                                        .filter_map(|e| Some(e.as_str()?.to_owned()))
+                                        .collect(),
+                                })
+                            })
+                            .collect(),
+                    );
+                }
                 _ => {}
             }
         }
@@ -339,25 +379,29 @@ fn main() -> Result<()> {
     println!("Resolving entity parents");
     loop {
         let mut changed = false;
-        for key in abstract_entities.keys().cloned().collect::<Vec<_>>() {
+        'a: for key in abstract_entities.keys().cloned().collect::<Vec<_>>() {
             let Some(value) = abstract_entities.get(&key) else {
                 continue;
             };
-            let Some(parent) = value.parent.clone() else {
-                continue;
-            };
-            if let [Some(value), Some(parent)] = abstract_entities.get_disjoint_mut([&key, &parent])
-            {
-                if parent.parent.is_some() {
-                    continue;
+            for parent in &value.parent {
+                if let Some(parent) = abstract_entities.get(parent)
+                    && !parent.parent.is_empty()
+                {
+                    continue 'a;
                 }
-                changed = true;
-                value.parent = None;
-                value.name = value.name.take().or(parent.name.clone());
-                value.desc = value.desc.take().or(parent.desc.clone());
-                value.components.extend_from_slice(&parent.components);
-            } else {
-                println!("Failed to resolve parent {parent}");
+            }
+            for parent in value.parent.clone() {
+                if let [Some(value), Some(parent)] =
+                    abstract_entities.get_disjoint_mut([&key, &parent])
+                {
+                    changed = true;
+                    value.parent = vec![];
+                    value.name = value.name.take().or(parent.name.clone());
+                    value.desc = value.desc.take().or(parent.desc.clone());
+                    value.components.extend_from_slice(&parent.components);
+                } else {
+                    println!("Failed to resolve parent {parent}");
+                }
             }
         }
         if !changed {
@@ -470,6 +514,7 @@ fn main() -> Result<()> {
                             &abstract_entities,
                             &metabolizer_types,
                             &polymorphs,
+                            &weighted_random_fill_solutions,
                         )? {
                             parsed_effects.push(parsed);
                         }
@@ -501,6 +546,7 @@ fn main() -> Result<()> {
                     &abstract_entities,
                     &metabolizer_types,
                     &polymorphs,
+                    &weighted_random_fill_solutions,
                 )? {
                     plant_metabolisms.push(parsed);
                 }
@@ -603,6 +649,7 @@ fn main() -> Result<()> {
                         &abstract_entities,
                         &metabolizer_types,
                         &polymorphs,
+                        &weighted_random_fill_solutions,
                     )? {
                         effects.push(parsed);
                     }
@@ -715,6 +762,7 @@ impl ConditionalEffect {
         abstract_entities: &HashMap<String, AbstractEntity>,
         metabolizer_types: &HashMap<String, String>,
         polymorphs: &HashMap<String, String>,
+        weighted_random_fill_solutions: &HashMap<String, Vec<RandomReagentFillEntry>>,
     ) -> eyre::Result<Option<Self>> {
         let Some(saphyr::Tag { handle: _, suffix }) = effect.get_tag() else {
             return Ok(None);
@@ -965,6 +1013,19 @@ impl ConditionalEffect {
                     .index("potencySeedlessThreshold")
                     .as_f64_alt()
                     .unwrap_or(30.0) as i64,
+            },
+            "type:PlantMutateChemicals" => Effect::PlantMutateChemicals {
+                fills: weighted_random_fill_solutions
+                    .get(
+                        effect
+                            .index("randomPickBotanyReagent")
+                            .as_str()
+                            .unwrap_or("RandomPickBotanyReagent"),
+                    )
+                    .ok_or(eyre!(
+                        "Failed to describe effects for {id}: unknown random pick botany reagent"
+                    ))?
+                    .clone(),
             },
             "type:Explosion" => Effect::ReactionExplosion,
             "type:AreaReactionEffect" => Effect::ReactionFoamOrSmoke {
@@ -1234,6 +1295,9 @@ enum Effect {
         potency_increase: i64,
         potency_seedless_threshold: i64,
     },
+    PlantMutateChemicals {
+        fills: Vec<RandomReagentFillEntry>,
+    },
     ReactionExplosion,
     ReactionFoamOrSmoke {
         duration: f64,
@@ -1248,6 +1312,13 @@ enum Effect {
         name: String,
         amount: f64,
     },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct RandomReagentFillEntry {
+    quantity: f64,
+    weight: f64,
+    reagents: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1309,7 +1380,7 @@ struct DamageGroup {
 struct AbstractEntity {
     id: String,
     is_abstract: bool,
-    parent: Option<String>,
+    parent: Vec<String>,
     name: Option<String>,
     desc: Option<String>,
     components: Vec<YamlOwned>,

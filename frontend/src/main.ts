@@ -452,6 +452,31 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
         `Trying to add potency over ${effect.effect.potency_limit} may cause decrease in yield at a 10% chance.`,
       );
       break;
+    case "PlantMutateChemicals":
+      entry.append("Mutates a plant to produce one of:");
+      const chemgroupslist = document.createElement("ul");
+      chemgroupslist.classList.add("mutation-chem-groups");
+      for (const chemgroup of effect.effect.fills) {
+        const chemgroupelem = document.createElement("li");
+        const amount = `With weight ${chemgroup.weight}, ${chemgroup.quantity}u of either:`;
+        chemgroupelem.append(amount);
+        const chemslist = document.createElement("ul");
+        chemslist.classList.add("mutation-chems");
+        for (const reagentid of chemgroup.reagents) {
+          const reagentelem = document.createElement("li");
+          const reagent = reagentData.reagents.find((e) => e.id == reagentid)!;
+          const reagentNameElem = document.createElement("a");
+          reagentNameElem.href = `#${reagent.id}`;
+          reagentNameElem.textContent = reagent.name;
+          reagentNameElem.classList.add("reagent-link");
+          reagentelem.appendChild(reagentNameElem);
+          chemslist.appendChild(reagentelem);
+        }
+        chemgroupelem.appendChild(chemslist);
+        chemgroupslist.appendChild(chemgroupelem);
+      }
+      entry.appendChild(chemgroupslist);
+      break;
     case "ReactionExplosion":
       entry.append("Causes an explosion.");
       break;

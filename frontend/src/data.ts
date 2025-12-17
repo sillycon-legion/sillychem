@@ -106,6 +106,7 @@ type Effect =
   | PlantCryoxadoneEffect
   | PlantDiethylamineEffect
   | PlantRobustHarvestEffect
+  | PlantMutateChemicalsEffect
   | ReactionExplosionEffect
   | ReactionFoamOrSmokeEffect
   | ReactionEmpEffect
@@ -300,6 +301,15 @@ interface PlantRobustHarvestEffect {
   potency_limit: number;
   potency_increase: number;
   potency_seedless_threshold: number;
+}
+
+interface PlantMutateChemicalsEffect {
+  type: "PlantMutateChemicals";
+  fills: {
+    quantity: number;
+    weight: number;
+    reagents: string[];
+  }[];
 }
 
 interface ReactionExplosionEffect {
