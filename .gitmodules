@@ -1,4 +1,4 @@
 [submodule "space-station-14"]
 	path = space-station-14
 	url = https://github.com/space-wizards/space-station-14.git
-	branch = master
+	branch = stable
