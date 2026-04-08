@@ -499,6 +499,17 @@ function createEffectElement(effect: ConditionalEffect, entry: HTMLElement) {
         `Creates ${effect.effect.amount} moles of ${effect.effect.name}.`,
       );
       break;
+    case "Metabolite":
+      entry.append(`Metabolizes into `);
+      const metaboliteid = effect.effect.reagent;
+      const metabolite = reagentData.reagents.find((e) => e.id == metaboliteid)!;
+      const metaboliteNameElem = document.createElement("a");
+      metaboliteNameElem.href = `#${metabolite.id}`;
+      metaboliteNameElem.textContent = metabolite.name;
+      metaboliteNameElem.classList.add("reagent-link");
+      entry.appendChild(metaboliteNameElem);
+      entry.append(` at a rate of ${effect.effect.rate * 100}%.`);
+      break;
   }
 }
 

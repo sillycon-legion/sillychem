@@ -112,7 +112,8 @@ type Effect =
   | ReactionEmpEffect
   | ReactionFlashEffect
   | ReactionCreateEntityEffect
-  | ReactionCreateGasEffect;
+  | ReactionCreateGasEffect
+  | MetaboliteEffect;
 
 interface SatiateHungerEffect {
   type: "SatiateHunger";
@@ -339,6 +340,12 @@ interface ReactionCreateGasEffect {
   type: "ReactionCreateGas";
   name: string;
   amount: number;
+}
+
+interface MetaboliteEffect {
+  type: "Metabolite";
+  reagent: string;
+  rate: number;
 }
 
 export interface ConditionalEffect {

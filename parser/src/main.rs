@@ -498,6 +498,20 @@ fn main() -> Result<()> {
                         continue;
                     }
                     let mut parsed_effects = Vec::new();
+                    let metabolism_rate =
+                        effects.index("metabolismRate").as_f64_alt().unwrap_or(0.5);
+                    if let Some(metabolites) = effects.index("metabolites").as_mapping() {
+                        for (metabolite, amount) in metabolites {
+                            parsed_effects.push(ConditionalEffect {
+                                conditions: vec![],
+                                probability: 1.0,
+                                effect: Effect::Metabolite {
+                                    reagent: metabolite.as_str().unwrap_or_default().to_owned(),
+                                    rate: amount.as_f64_alt().unwrap_or_default(),
+                                },
+                            });
+                        }
+                    };
                     for effect in effects
                         .index("effects")
                         .as_vec()
@@ -525,7 +539,7 @@ fn main() -> Result<()> {
                     metabolisms.insert(
                         kind.to_string(),
                         Metabolism {
-                            rate: effects.index("metabolismRate").as_f64_alt().unwrap_or(0.5),
+                            rate: metabolism_rate,
                             effects: parsed_effects,
                         },
                     );
@@ -1311,6 +1325,10 @@ enum Effect {
     ReactionCreateGas {
         name: String,
         amount: f64,
+    },
+    Metabolite {
+        reagent: String,
+        rate: f64,
     },
 }
 
